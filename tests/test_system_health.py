@@ -18,3 +18,4 @@ def test_api_router_structure():
     except ImportError:
         # En caso de aislamiento de dependencias locales
         assert True
+

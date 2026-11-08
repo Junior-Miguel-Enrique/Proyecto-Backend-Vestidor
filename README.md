@@ -92,3 +92,4 @@ Para ejecutar la suite de pruebas unitarias y de integración:
 ```bash
 pytest
 ```
+

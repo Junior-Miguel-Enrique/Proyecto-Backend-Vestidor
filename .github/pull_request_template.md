@@ -13,3 +13,4 @@
 - [ ] Se ejecutaron las pruebas locales con `pytest` y pasaron satisfactoriamente.
 - [ ] Se actualizaron los esquemas de Pydantic o migraciones de Alembic si aplica.
 - [ ] No se incluyen credenciales ni secretos en el código fuente.
+
