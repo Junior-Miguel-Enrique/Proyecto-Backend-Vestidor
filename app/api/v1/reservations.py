@@ -1,0 +1,183 @@
+import uuid
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.api.deps import require_permission, get_current_user, get_history_user
+from app.models.reservation import ReservationStatus
+from app.schemas.reservation import (
+    ReservationCreate,
+    ReservationResponse,
+    ExpireReservationsResponse,
+)
+from app.services.reservation_service import ReservationService
+from app.services.audit_service import AuditService
+from app.services.role_service import RoleService
+
+router = APIRouter(prefix="/reservas", tags=["Reservas"])
+
+
+@router.post(
+    "",
+    response_model=ReservationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear una nueva reserva"
+)
+def create_reservation(
+    data: ReservationCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    res = ReservationService.create_reservation(db, data, cliente_id=current_user.id)
+    codigo = getattr(res, "codigo", "")
+    AuditService.log(
+        db=db,
+        action=f"CreaciÃ³n de reserva #{codigo}",
+        module="Reservas",
+        user=current_user
+    )
+    return res
+
+
+@router.get(
+    "/mis-reservas",
+    response_model=List[ReservationResponse],
+    summary="Listar mis reservas (cliente)"
+)
+def get_my_reservations(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_history_user)
+):
+    return ReservationService.get_client_reservations(db, cliente_id=current_user.id)
+
+
+@router.get(
+    "",
+    response_model=List[ReservationResponse],
+    dependencies=[Depends(require_permission("reservas.list"))],
+    summary="Listar reservas con filtros (Staff / Encargado / Admin)"
+)
+def get_reservations(
+    sucursal_id: Optional[uuid.UUID] = Query(None),
+    estado: Optional[ReservationStatus] = Query(None),
+    cliente_id: Optional[uuid.UUID] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return ReservationService.get_reservations(
+        db,
+        sucursal_id=sucursal_id,
+        estado=estado,
+        cliente_id=cliente_id,
+        limit=limit,
+        offset=offset,
+        tenant_id=current_user.tenant_id
+    )
+
+
+@router.get(
+    "/{reserva_id}",
+    response_model=ReservationResponse,
+    summary="Ver detalle de una reserva"
+)
+def get_reservation(
+    reserva_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    reservation = ReservationService.get_reservation_by_id(db, reserva_id)
+    permissions = RoleService.get_permission_codes(db,current_user.role_id)
+    owner = reservation.get("cliente_id") if isinstance(reservation,dict) else reservation.cliente_id
+    if owner != current_user.id and "reservas.list" not in permissions:
+        from fastapi import HTTPException
+        raise HTTPException(404,"Reserva no encontrada")
+    return reservation
+
+
+@router.patch(
+    "/{reserva_id}/cancelar",
+    response_model=ReservationResponse,
+    summary="Cancelar una reserva pendiente"
+)
+def cancel_reservation(
+    reserva_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    role_name = current_user.role.name if getattr(current_user, "role", None) else ""
+    user_permissions = RoleService.get_permission_codes(db, current_user.role_id) if current_user.role_id else []
+    is_staff = (role_name in ["admin", "encargado"]) or ("reservas.update" in user_permissions) or ("reservas.delete" in user_permissions)
+    res = ReservationService.cancel_reservation(
+        db,
+        reserva_id=reserva_id,
+        user_id=current_user.id,
+        is_staff=is_staff
+    )
+    codigo = getattr(res, "codigo", "")
+    AuditService.log(
+        db=db,
+        action=f"CancelaciÃ³n de reserva #{codigo}",
+        module="Reservas",
+        user=current_user
+    )
+    return res
+
+
+@router.patch(
+    "/{reserva_id}/preparar",
+    response_model=ReservationResponse,
+    dependencies=[Depends(require_permission("reservas.update"))],
+    summary="Marcar reserva como preparada para entrega"
+)
+def prepare_reservation(
+    reserva_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    res = ReservationService.prepare_reservation(db, reserva_id, user_id=current_user.id)
+    codigo = getattr(res, "codigo", "")
+    AuditService.log(
+        db=db,
+        action=f"Reserva #{codigo} marcada como PREPARADA",
+        module="Reservas",
+        user=current_user
+    )
+    return res
+
+
+@router.patch(
+    "/{reserva_id}/recoger",
+    response_model=ReservationResponse,
+    dependencies=[Depends(require_permission("reservas.update"))],
+    summary="Marcar reserva como recogida por el cliente"
+)
+def pickup_reservation(
+    reserva_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    res = ReservationService.pickup_reservation(db, reserva_id, user_id=current_user.id)
+    codigo = getattr(res, "codigo", "")
+    AuditService.log(
+        db=db,
+        action=f"Reserva #{codigo} ENTREGADA al cliente",
+        module="Reservas",
+        user=current_user
+    )
+    return res
+
+
+@router.post(
+    "/expirar-vencidas",
+    response_model=ExpireReservationsResponse,
+    dependencies=[Depends(require_permission("reservas.update"))],
+    summary="Procesar y liberar stock de reservas vencidas"
+)
+def expire_reservations(
+    db: Session = Depends(get_db)
+):
+    return ReservationService.expire_pending_reservations(db)

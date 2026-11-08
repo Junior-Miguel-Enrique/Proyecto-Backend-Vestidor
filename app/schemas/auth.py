@@ -1,0 +1,38 @@
+import uuid
+from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
+from app.schemas.user import UserResponse
+
+
+class LoginRequest(BaseModel):
+    tenant_id: Optional[uuid.UUID] = None
+    email: EmailStr
+    password: str = Field(..., min_length=1)
+
+
+class RegisterRequest(BaseModel):
+    tenant_id: uuid.UUID
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=100)
+    full_name: str = Field(..., min_length=2, max_length=100)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, description="Contraseña actual")
+    new_password: str = Field(..., min_length=8, max_length=100, description="Nueva contraseña (mínimo 8 caracteres)")
+

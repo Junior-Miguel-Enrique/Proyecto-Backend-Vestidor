@@ -1,0 +1,81 @@
+from fastapi import APIRouter
+from app.api.v1.auth import router as auth_router
+from app.api.v1.users import router as users_router
+from app.api.v1.roles import router as roles_router
+from app.api.v1.permissions import router as permissions_router
+from app.api.v1.branches import router as branches_router
+from app.api.v1.categories import router as categories_router
+from app.api.v1.products import router as products_router
+from app.api.v1.variants import router as variants_router
+from app.api.v1.suppliers import router as suppliers_router
+from app.api.v1.seasons import router as seasons_router
+from app.api.v1.inventory import router as inventory_router
+from app.api.v1.reservations import router as reservations_router
+from app.api.v1.sales import router as sales_router
+from app.api.v1.payments import router as payments_router
+from app.api.v1.ai import router as ai_router
+from app.api.v1.voice_reports import router as voice_reports_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.audit_logs import router as audit_logs_router
+from app.api.v1.exchanges import router as exchanges_router
+from app.api.v1.analytics import router as analytics_router
+from app.api.v1.subscriptions import router as subscriptions_router
+from app.api.v1.sync import router as sync_router
+from app.api.v1.favorites import router as favorites_router
+from app.api.v1.deliveries import router as deliveries_router
+from app.api.v1.recommendations import router as recommendations_router
+from app.api.v1.voice_search import router as voice_search_router
+from app.api.v1.chatbot import router as chatbot_router
+from app.api.v1.wallet import router as wallet_router
+from app.api.v1.backup import router as backup_router
+from app.api.v1.custom_reports import router as custom_reports_router
+from app.api.v1.coupons import router as coupons_router
+
+api_v1_router = APIRouter()
+from app.api.v1.platform import router as platform_router
+api_v1_router.include_router(platform_router)
+api_v1_router.include_router(auth_router)
+api_v1_router.include_router(users_router)
+api_v1_router.include_router(roles_router)
+api_v1_router.include_router(permissions_router)
+api_v1_router.include_router(branches_router)
+api_v1_router.include_router(categories_router)
+api_v1_router.include_router(products_router)
+api_v1_router.include_router(variants_router)
+api_v1_router.include_router(suppliers_router)
+api_v1_router.include_router(seasons_router)
+api_v1_router.include_router(inventory_router)
+api_v1_router.include_router(reservations_router)
+api_v1_router.include_router(sales_router)
+api_v1_router.include_router(payments_router)
+api_v1_router.include_router(ai_router)
+api_v1_router.include_router(voice_reports_router)
+api_v1_router.include_router(notifications_router)
+api_v1_router.include_router(audit_logs_router)
+api_v1_router.include_router(exchanges_router)
+api_v1_router.include_router(analytics_router)
+api_v1_router.include_router(subscriptions_router)
+api_v1_router.include_router(sync_router)
+api_v1_router.include_router(favorites_router)
+api_v1_router.include_router(deliveries_router)
+api_v1_router.include_router(recommendations_router)
+api_v1_router.include_router(voice_search_router)
+api_v1_router.include_router(chatbot_router)
+api_v1_router.include_router(wallet_router)
+api_v1_router.include_router(backup_router)
+api_v1_router.include_router(custom_reports_router)
+api_v1_router.include_router(coupons_router)
+
+
+
+
+
+
+
+from app.api.v1.subscription_contracts import router as subscription_contracts_router
+api_v1_router.include_router(subscription_contracts_router)
+
+from app.api.v1.company_paypal import router as company_paypal_router
+api_v1_router.include_router(company_paypal_router)
+from app.api.v1.subscription_billing import router as subscription_billing_router
+api_v1_router.include_router(subscription_billing_router)

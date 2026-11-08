@@ -1,0 +1,60 @@
+import uuid
+from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from app.schemas.role import RoleResponse
+
+
+class UserBase(BaseModel):
+    email: EmailStr
+    full_name: str = Field(..., min_length=2, max_length=100)
+
+
+class UserCreate(UserBase):
+    tenant_id: Optional[uuid.UUID] = None
+    password: str = Field(..., min_length=8, max_length=100, description="Minimum 8 characters")
+    role_id: Optional[uuid.UUID] = None
+
+
+class UserAdminCreate(UserBase):
+    password: str = Field(..., min_length=8, max_length=100, description="Minimum 8 characters")
+    role_id: Optional[uuid.UUID] = None
+    is_active: bool = True
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
+    role_id: Optional[uuid.UUID] = None
+
+
+class UserAdminUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
+    role_id: Optional[uuid.UUID] = None
+    password: Optional[str] = Field(None, min_length=8, max_length=100)
+    is_active: Optional[bool] = None
+
+
+
+class UserResponse(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    is_active: bool
+    is_verified: bool
+    is_platform_admin: bool = False
+    access_scope: str = 'COMPANY'
+    service_restricted: bool=False
+    subscription_capabilities: dict[str,bool]={}
+    role: Optional[RoleResponse] = None
+    permissions: List[str] = []
+    tenant_id: Optional[uuid.UUID] = None
+    tenant_name: Optional[str] = None
+    tenant_logo_url: Optional[str] = None
+    tenant_color_primario: Optional[str] = "#4f46e5"
+    tenant_color_secundario: Optional[str] = "#818cf8"
+    tenant_eslogan: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
